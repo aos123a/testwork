@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>日翊庫存管理系統</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+      background: #F0F4FF;
+      color: #1e293b;
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.8rem;
+      margin-bottom: 24px;
+      color: #1E40AF;
+      letter-spacing: 2px;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding: 24px;
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      margin-bottom: 16px;
+      color: #1E40AF;
+      border-left: 4px solid #3B82F6;
+      padding-left: 10px;
+    }
+
+    /* 警示區塊 */
+    .alert-card {
+      background: #fff5f5;
+      border: 1px solid #feb2b2;
+      border-radius: 12px;
+      padding: 20px 24px;
+    }
+
+    .alert-card h2 {
+      color: #c53030;
+      border-left-color: #c53030;
+    }
+
+    .alert-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .alert-chip {
+      background: #fed7d7;
+      color: #742a2a;
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .alert-chip span { color: #c53030; }
+
+    .alert-none {
+      color: #68d391;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    /* 表單 */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+
+    label { font-size: 0.85rem; color: #4a5568; font-weight: 600; }
+
+    input[type="text"], input[type="number"] {
+      padding: 9px 12px;
+      border: 1px solid #cbd5e0;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: border-color .2s;
+      outline: none;
+      font-family: inherit;
+    }
+
+    input[type="text"]:focus, input[type="number"]:focus {
+      border-color: #1E40AF;
+      box-shadow: 0 0 0 3px rgba(43,108,176,0.15);
+    }
+
+    button {
+      padding: 9px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-family: inherit;
+      font-weight: 600;
+      transition: background .2s, transform .1s;
+    }
+
+    button:active { transform: scale(0.97); }
+
+    .btn-primary  { background: #1E40AF; color: #fff; }
+    .btn-primary:hover  { background: #1e3a8a; }
+
+    .btn-success  { background: #38a169; color: #fff; padding: 5px 10px; font-size: 0.8rem; }
+    .btn-success:hover  { background: #276749; }
+
+    .btn-warning  { background: #dd6b20; color: #fff; padding: 5px 10px; font-size: 0.8rem; }
+    .btn-warning:hover  { background: #c05621; }
+
+    .btn-edit     { background: #6b46c1; color: #fff; padding: 5px 10px; font-size: 0.8rem; }
+    .btn-edit:hover     { background: #553c9a; }
+
+    .btn-danger   { background: #e53e3e; color: #fff; padding: 5px 10px; font-size: 0.8rem; }
+    .btn-danger:hover   { background: #c53030; }
+
+    .btn-export   { background: #2f855a; color: #fff; }
+    .btn-export:hover   { background: #276749; }
+
+    /* 搜尋列 */
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar input { flex: 1; min-width: 180px; }
+
+    /* 統計 */
+    .stats { display: flex; gap: 12px; flex-wrap: wrap; }
+
+    .stat-box {
+      flex: 1;
+      min-width: 120px;
+      background: #EFF6FF;
+      border-radius: 8px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+
+    .stat-box.warn { background: #fff5f5; }
+
+    .stat-box .num {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #1E40AF;
+      line-height: 1.2;
+    }
+
+    .stat-box.warn .num { color: #e53e3e; }
+    .stat-box .label { font-size: 0.78rem; color: #4a5568; margin-top: 4px; }
+
+    /* 表格 */
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    thead { background: #1E40AF; color: #fff; }
+
+    th {
+      padding: 11px 12px;
+      text-align: left;
+      font-weight: 600;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    th.sortable {
+      cursor: pointer;
+    }
+
+    th.sortable:hover { background: #3B82F6; }
+
+    th .sort-icon { margin-left: 5px; opacity: 0.5; font-size: 0.75rem; }
+    th.sort-asc  .sort-icon,
+    th.sort-desc .sort-icon { opacity: 1; }
+
+    td {
+      padding: 9px 12px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: middle;
+    }
+
+    /* 斑馬紋（僅套用在非警示列） */
+    tbody tr.row-ok:nth-child(even)  { background: #f7fafc; }
+    tbody tr.row-ok:nth-child(odd)   { background: #fff; }
+    tbody tr.row-ok:hover            { background: #EFF6FF; }
+
+    /* 庫存不足整列紅色 */
+    tbody tr.row-low  { background: #fff5f5 !important; }
+    tbody tr.row-low:hover { background: #fed7d7 !important; }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .badge-ok    { background: #c6f6d5; color: #276749; }
+    .badge-low   { background: #feebc8; color: #744210; }
+    .badge-empty { background: #fed7d7; color: #742a2a; }
+
+    .actions { display: flex; gap: 5px; flex-wrap: wrap; }
+
+    .empty-msg {
+      text-align: center;
+      padding: 32px;
+      color: #a0aec0;
+      font-size: 0.95rem;
+    }
+
+    /* inline 編輯 */
+    .editable-input {
+      width: 80px;
+      padding: 4px 8px;
+      border: 1px solid #1E40AF;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-family: inherit;
+    }
+
+    .msg {
+      text-align: center;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      margin-top: 8px;
+      display: none;
+    }
+
+    .msg.success { background: #c6f6d5; color: #276749; display: block; }
+    .msg.error   { background: #fed7d7; color: #742a2a; display: block; }
+
+    /* 進出貨 modal */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .overlay.show { display: flex; }
+
+    .modal {
+      background: #fff;
+      border-radius: 14px;
+      padding: 28px 32px;
+      width: 320px;
+      max-width: 90vw;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    }
+
+    .modal h3 { font-size: 1.05rem; margin-bottom: 16px; color: #2d3748; }
+
+    .modal .modal-body { display: flex; flex-direction: column; gap: 12px; }
+
+    .modal input {
+      padding: 9px 12px;
+      border: 1px solid #cbd5e0;
+      border-radius: 8px;
+      font-size: 1rem;
+      outline: none;
+      font-family: inherit;
+      width: 100%;
+    }
+
+    .modal input:focus { border-color: #1E40AF; box-shadow: 0 0 0 3px rgba(43,108,176,0.15); }
+
+    .modal-actions { display: flex; gap: 10px; margin-top: 6px; }
+    .modal-actions button { flex: 1; }
+
+    @media (max-width: 600px) {
+      .form-grid { grid-template-columns: 1fr 1fr; }
+      .form-grid .btn-primary { grid-column: 1/-1; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>📦 日翊庫存管理系統</h1>
+
+  <!-- 統計卡片 -->
+  <div class="card">
+    <div class="stats">
+      <div class="stat-box">
+        <div class="num" id="stat-total">0</div>
+        <div class="label">商品總數</div>
+      </div>
+      <div class="stat-box warn">
+        <div class="num" id="stat-low">0</div>
+        <div class="label">庫存不足</div>
+      </div>
+      <div class="stat-box warn">
+        <div class="num" id="stat-empty">0</div>
+        <div class="label">庫存為零</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 庫存不足警示 -->
+  <div class="card alert-card" id="alert-card">
+    <h2>⚠️ 庫存不足警示</h2>
+    <div class="alert-list" id="alert-list"></div>
+  </div>
+
+  <!-- 新增商品 -->
+  <div class="card">
+    <h2>新增商品</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="inp-name">商品名稱</label>
+        <input type="text" id="inp-name" placeholder="例：A4 影印紙">
+      </div>
+      <div class="form-group">
+        <label for="inp-qty">目前數量</label>
+        <input type="number" id="inp-qty" placeholder="0" min="0">
+      </div>
+      <div class="form-group">
+        <label for="inp-min">最低庫存量</label>
+        <input type="number" id="inp-min" placeholder="0" min="0">
+      </div>
+      <button class="btn-primary" onclick="addItem()">＋ 新增</button>
+    </div>
+    <div class="msg" id="form-msg"></div>
+  </div>
+
+  <!-- 搜尋 + 列表 -->
+  <div class="card">
+    <h2>庫存列表</h2>
+    <div class="toolbar">
+      <input type="text" id="search" placeholder="搜尋商品名稱…" oninput="renderAll()">
+      <button class="btn-export" onclick="exportCSV()">⬇ 匯出 CSV</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th class="sortable" onclick="toggleSort('name')">商品名稱<span class="sort-icon" id="sort-icon-name">⇅</span></th>
+            <th class="sortable" onclick="toggleSort('qty')">目前數量<span class="sort-icon" id="sort-icon-qty">⇅</span></th>
+            <th class="sortable" onclick="toggleSort('min')">最低庫存量<span class="sort-icon" id="sort-icon-min">⇅</span></th>
+            <th>狀態</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+      <div class="empty-msg" id="empty-msg" style="display:none;">尚無商品，請從上方新增。</div>
+    </div>
+  </div>
+</div>
+
+<footer style="text-align:center;margin-top:8px;padding:16px;font-size:0.78rem;color:#6b7280;">
+  Powered by Claude Code &mdash; 日翊 AI 內訓 2026/4/23
+</footer>
+
+<!-- 進出貨 Modal -->
+<div class="overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <h3 id="modal-title">進貨</h3>
+    <div class="modal-body">
+      <div style="color:#4a5568;font-size:.9rem;" id="modal-info"></div>
+      <input type="number" id="modal-qty" placeholder="請輸入數量" min="1">
+      <div class="modal-actions">
+        <button class="btn-primary" onclick="confirmModal()">確認</button>
+        <button class="btn-danger" onclick="hideModal()">取消</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'inventory_v1';
+  let modalState = null;
+  let sortState  = { key: null, asc: true };
+
+  function load() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+    catch { return []; }
+  }
+
+  function save(data) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  function isLow(item) { return item.qty <= item.min; }
+
+  function getStatus(qty, min) {
+    if (qty === 0)      return { text: '庫存為零', cls: 'badge-empty' };
+    if (qty <= min)     return { text: '庫存不足', cls: 'badge-low'   };
+    return              { text: '正常',     cls: 'badge-ok'    };
+  }
+
+  function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function showMsg(id, text, type) {
+    const el = document.getElementById(id);
+    el.textContent = text;
+    el.className = 'msg ' + type;
+    setTimeout(() => { el.className = 'msg'; }, 2500);
+  }
+
+  /* ── 新增 ── */
+  function addItem() {
+    const name = document.getElementById('inp-name').value.trim();
+    const qty  = parseInt(document.getElementById('inp-qty').value);
+    const min  = parseInt(document.getElementById('inp-min').value);
+
+    if (!name)               return showMsg('form-msg', '請輸入商品名稱', 'error');
+    if (isNaN(qty) || qty < 0) return showMsg('form-msg', '請輸入有效的數量（≥ 0）', 'error');
+    if (isNaN(min) || min < 0) return showMsg('form-msg', '請輸入有效的最低庫存量（≥ 0）', 'error');
+
+    const data = load();
+    if (data.find(i => i.name === name)) return showMsg('form-msg', '商品名稱已存在', 'error');
+
+    data.push({ id: Date.now(), name, qty, min });
+    save(data);
+
+    document.getElementById('inp-name').value = '';
+    document.getElementById('inp-qty').value  = '';
+    document.getElementById('inp-min').value  = '';
+
+    showMsg('form-msg', `已新增「${name}」`, 'success');
+    renderAll();
+  }
+
+  /* ── 刪除 ── */
+  function deleteItem(id) {
+    if (!confirm('確定要刪除此商品嗎？')) return;
+    save(load().filter(i => i.id !== id));
+    renderAll();
+  }
+
+  /* ── 進出貨 Modal ── */
+  function openModal(id, type) {
+    const item = load().find(i => i.id === id);
+    if (!item) return;
+    modalState = { id, type };
+    document.getElementById('modal-title').textContent = type === 'in' ? '📥 進貨' : '📤 出貨';
+    document.getElementById('modal-info').textContent =
+      `商品：${item.name}　目前庫存：${item.qty}`;
+    document.getElementById('modal-qty').value = '';
+    document.getElementById('modal-overlay').classList.add('show');
+    setTimeout(() => document.getElementById('modal-qty').focus(), 50);
+  }
+
+  function hideModal() {
+    document.getElementById('modal-overlay').classList.remove('show');
+    modalState = null;
+  }
+
+  function closeModal(e) {
+    if (e.target === document.getElementById('modal-overlay')) hideModal();
+  }
+
+  function confirmModal() {
+    if (!modalState) return;
+    const delta = parseInt(document.getElementById('modal-qty').value);
+    if (isNaN(delta) || delta <= 0) { alert('請輸入大於 0 的數量'); return; }
+
+    const data = load();
+    const idx  = data.findIndex(i => i.id === modalState.id);
+    if (idx === -1) { hideModal(); return; }
+
+    if (modalState.type === 'in') {
+      data[idx].qty += delta;
+    } else {
+      if (delta > data[idx].qty) { alert(`出貨數量不能超過目前庫存（${data[idx].qty}）`); return; }
+      data[idx].qty -= delta;
+    }
+
+    save(data);
+    hideModal();
+    renderAll();
+  }
+
+  /* ── 編輯 ── */
+  function startEdit(id) {
+    const item = load().find(i => i.id === id);
+    if (!item) return;
+    const row = document.querySelector(`tr[data-id="${id}"]`);
+    if (!row) return;
+
+    row.querySelector('.cell-name').innerHTML =
+      `<input class="editable-input" id="e-name-${id}" value="${escHtml(item.name)}" style="width:110px;">`;
+    row.querySelector('.cell-qty').innerHTML =
+      `<input class="editable-input" id="e-qty-${id}" type="number" value="${item.qty}" min="0">`;
+    row.querySelector('.cell-min').innerHTML =
+      `<input class="editable-input" id="e-min-${id}" type="number" value="${item.min}" min="0">`;
+    row.querySelector('.cell-status').innerHTML = '';
+
+    row.querySelector('.actions').innerHTML =
+      `<button class="btn-primary" style="padding:5px 10px;font-size:.8rem;" onclick="saveEdit(${id})">儲存</button>
+       <button class="btn-danger" onclick="renderAll()">取消</button>`;
+  }
+
+  function saveEdit(id) {
+    const name = document.getElementById(`e-name-${id}`).value.trim();
+    const qty  = parseInt(document.getElementById(`e-qty-${id}`).value);
+    const min  = parseInt(document.getElementById(`e-min-${id}`).value);
+
+    if (!name || isNaN(qty) || qty < 0 || isNaN(min) || min < 0) { alert('請填入有效資料'); return; }
+
+    const data = load();
+    if (data.find(i => i.name === name && i.id !== id)) { alert('商品名稱已存在'); return; }
+
+    const idx = data.findIndex(i => i.id === id);
+    if (idx !== -1) data[idx] = { id, name, qty, min };
+    save(data);
+    renderAll();
+  }
+
+  /* ── 匯出 CSV ── */
+  function exportCSV() {
+    const data = load();
+    if (data.length === 0) { alert('目前沒有商品可匯出'); return; }
+
+    const header = ['商品名稱', '目前數量', '最低庫存量', '狀態'];
+    const rows = data.map(item => {
+      const st = getStatus(item.qty, item.min);
+      return [item.name, item.qty, item.min, st.text].map(v => `"${String(v).replace(/"/g,'""')}"`);
+    });
+
+    const csv = '\uFEFF' + [header, ...rows].map(r => r.join(',')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `庫存列表_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  /* ── 排序 ── */
+  function toggleSort(key) {
+    if (sortState.key === key) {
+      sortState.asc = !sortState.asc;
+    } else {
+      sortState.key = key;
+      sortState.asc = true;
+    }
+    renderAll();
+  }
+
+  function applySort(arr) {
+    if (!sortState.key) return arr;
+    const { key, asc } = sortState;
+    return [...arr].sort((a, b) => {
+      const va = a[key], vb = b[key];
+      const cmp = typeof va === 'string' ? va.localeCompare(vb, 'zh-TW') : va - vb;
+      return asc ? cmp : -cmp;
+    });
+  }
+
+  function updateSortIcons() {
+    ['name','qty','min'].forEach(k => {
+      const el = document.getElementById(`sort-icon-${k}`);
+      const th = el.parentElement;
+      if (sortState.key === k) {
+        el.textContent = sortState.asc ? '▲' : '▼';
+        th.classList.toggle('sort-asc',  sortState.asc);
+        th.classList.toggle('sort-desc', !sortState.asc);
+      } else {
+        el.textContent = '⇅';
+        th.classList.remove('sort-asc','sort-desc');
+      }
+    });
+  }
+
+  /* ── 渲染 ── */
+  function renderAll() {
+    renderAlert();
+    renderTable();
+    updateStats();
+    updateSortIcons();
+  }
+
+  function renderAlert() {
+    const data = load();
+    const low  = data.filter(isLow);
+    const list = document.getElementById('alert-list');
+    if (low.length === 0) {
+      list.innerHTML = '<span class="alert-none">✅ 目前所有商品庫存正常</span>';
+    } else {
+      list.innerHTML = low.map(item =>
+        `<span class="alert-chip">${escHtml(item.name)} <span>（剩 ${item.qty}，最低 ${item.min}）</span></span>`
+      ).join('');
+    }
+  }
+
+  function renderTable() {
+    const data     = load();
+    const keyword  = document.getElementById('search').value.trim().toLowerCase();
+    const filtered = applySort(keyword ? data.filter(i => i.name.toLowerCase().includes(keyword)) : data);
+
+    const tbody = document.getElementById('table-body');
+    const empty = document.getElementById('empty-msg');
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+
+    empty.style.display = 'none';
+    tbody.innerHTML = filtered.map((item, idx) => {
+      const st     = getStatus(item.qty, item.min);
+      const rowCls = isLow(item) ? 'row-low' : 'row-ok';
+      return `<tr data-id="${item.id}" class="${rowCls}">
+        <td>${idx + 1}</td>
+        <td class="cell-name">${escHtml(item.name)}</td>
+        <td class="cell-qty">${item.qty}</td>
+        <td class="cell-min">${item.min}</td>
+        <td class="cell-status"><span class="badge ${st.cls}">${st.text}</span></td>
+        <td><div class="actions">
+          <button class="btn-success" onclick="openModal(${item.id},'in')">📥 進貨</button>
+          <button class="btn-warning" onclick="openModal(${item.id},'out')">📤 出貨</button>
+          <button class="btn-edit"    onclick="startEdit(${item.id})">編輯</button>
+          <button class="btn-danger"  onclick="deleteItem(${item.id})">刪除</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function updateStats() {
+    const data = load();
+    document.getElementById('stat-total').textContent = data.length;
+    document.getElementById('stat-low').textContent   = data.filter(i => i.qty > 0 && i.qty <= i.min).length;
+    document.getElementById('stat-empty').textContent = data.filter(i => i.qty === 0).length;
+  }
+
+  // Enter 快速新增
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      if (['inp-name','inp-qty','inp-min'].includes(e.target.id)) addItem();
+      if (e.target.id === 'modal-qty') confirmModal();
+    }
+    if (e.key === 'Escape') hideModal();
+  });
+
+  renderAll();
+</script>
+</body>
+</html>
